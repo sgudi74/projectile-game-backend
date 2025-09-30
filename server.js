@@ -65,7 +65,7 @@ app.post('/submit-score', async (req, res) => {
 
 app.get('/high-scores', async (req, res) => {
     try {
-        const query = 'SELECT name, email, score FROM scores ORDER BY score DESC LIMIT 100';
+        const query = 'SELECT name, email, score FROM scores ORDER BY score DESC';
         const result = await client.query(query);
         res.status(200).send(result.rows);
     } catch (err) {
