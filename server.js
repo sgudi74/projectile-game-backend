@@ -1,23 +1,16 @@
-// server.js - Updated for MongoDB/Mongoose
-
-// 1. IMPORTS & SETUP
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
-// 🚨 IMPORTANT: This assumes you have created the Score.js file 
-//    in the same directory as server.js.
 const Score = require('./Score'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// Fetches the MongoDB connection string from Render's environment variables
 const DB_URI = process.env.DATABASE_URL; 
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// 2. MONGO DB CONNECTION
+
 if (!DB_URI) {
     console.error("FATAL ERROR: DATABASE_URL not set in environment variables.");
     process.exit(1); 
@@ -39,15 +32,10 @@ mongoose.connect(DB_URI)
     process.exit(1); 
   });
 
-
-// 3. API ROUTES
-
-// Route to submit a new score (POST)
 app.post('/submit-score', async (req, res) => {
     try {
         const { name, email, score } = req.body;
-        
-        // Use Mongoose to create a new document
+
         const newScore = new Score({ name, email, score });
         await newScore.save();
         
@@ -60,10 +48,9 @@ app.post('/submit-score', async (req, res) => {
     }
 });
 
-// Route to fetch high scores (GET)
 app.get('/high-scores', async (req, res) => {
     try {
-        // Find documents, sort by 'score' descending (-1), and limit to 10 results
+        
         const highScores = await Score.find()
             .sort({ score: -1 }) 
             .limit(10);        
@@ -71,7 +58,7 @@ app.get('/high-scores', async (req, res) => {
         res.json(highScores);
     } catch (error) {
         console.error('Error fetching scores:', error);
-        // Return an empty list on failure so the frontend doesn't crash
+    
         res.status(500).json([]); 
     }
 });
