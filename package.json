@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "express": "^4.19.2",
-    "mongoose": "^8.4.1", ⬅️ **NEW!**
+    "mongoose": "^8.4.1",
     "cors": "^2.8.5",
     // Make sure you have REMOVED the old 'pg', 'sequelize', etc.
   }
