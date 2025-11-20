@@ -1,18 +1,15 @@
 {
-  "name": "game-backend",
+  "name": "projectile-game-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Server for Projectile Game High Scores",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "body-parser": "^2.2.0",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.1", ⬅️ **NEW!**
     "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "pg": "^8.16.3"
+    // Make sure you have REMOVED the old 'pg', 'sequelize', etc.
   }
 }
