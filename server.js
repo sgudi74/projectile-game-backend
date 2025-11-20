@@ -1,80 +1,70 @@
-// server.js
+// 1. IMPORTS & SETUP
 const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const { Client } = require('pg');
+const mongoose = require('mongoose'); ⬅️ NEW!
+const cors = require('cors'); // If you are using CORS
+const Score = require('./Score'); ⬅️ NEW! (The model you created in Step 2)
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
+const DB_URI = process.env.DATABASE_URL; // Gets the URL you set on Render
 
-// Middleware to handle JSON and CORS
+// Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// --- Database Connection Code ---
-const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
-});
 
-client.connect()
-    .then(() => console.log('Connected to PostgreSQL database!'))
-    .catch(err => console.error('Connection error', err.stack));
-
-// Function to create the scores table if it doesn't exist
-async function createTable() {
-    const query = `
-        CREATE TABLE IF NOT EXISTS scores (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            email VARCHAR(255) NOT NULL,
-            score INT NOT NULL
-        );
-    `;
-    try {
-        await client.query(query);
-        console.log('Scores table created or already exists.');
-    } catch (err) {
-        console.error('Error creating scores table:', err.stack);
-    }
-}
-
-createTable();
-
-// --- API Endpoints ---
-app.post('/submit-score', async (req, res) => {
-    const { name, email, score } = req.body;
+// 2. MONGO DB CONNECTION (REPLACES YOUR OLD DB CONNECTION CODE)
+mongoose.connect(DB_URI)
+  .then(() => {
+    console.log('✅ MongoDB successfully connected!');
     
-    if (name && email && typeof score === 'number') {
-        try {
-            const query = 'INSERT INTO scores (name, email, score) VALUES ($1, $2, $3) RETURNING *';
-            const values = [name, email, score];
-            const result = await client.query(query, values);
-            console.log('New score inserted into database:', result.rows[0]);
-            res.status(201).send({ message: 'Score submitted successfully!' });
-        } catch (err) {
-            console.error('Error inserting score:', err.stack);
-            res.status(500).send({ message: 'Failed to submit score to database.' });
-        }
-    } else {
-        res.status(400).send({ message: 'Invalid data.' });
+    // START THE SERVER ONLY AFTER THE DB CONNECTION IS SUCCESSFUL
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection FAILED:', err);
+    // CRITICAL: Exit the process if DB connection fails to stop the crash loop
+    process.exit(1); 
+  });
+
+
+// 3. API ROUTES (REPLACES YOUR OLD POSTGRESQL ROUTES)
+
+// Route to submit a new score (Frontend calls this with POST)
+app.post('/submit-score', async (req, res) => {
+    try {
+        const { name, email, score } = req.body;
+        
+        // Use Mongoose to create and save the new score
+        const newScore = new Score({ name, email, score });
+        await newScore.save();
+        
+        console.log(`Score saved for ${name}`);
+        res.status(201).send('Score recorded successfully.');
+    } catch (error) {
+        console.error('Error recording score:', error);
+        res.status(500).send('Error recording score.');
     }
 });
 
+// Route to fetch high scores (Frontend calls this with GET)
 app.get('/high-scores', async (req, res) => {
     try {
-        const query = 'SELECT name, email, score FROM scores ORDER BY score DESC';
-        const result = await client.query(query);
-        res.status(200).send(result.rows);
-    } catch (err) {
-        console.error('Error fetching scores:', err.stack);
-        res.status(500).send({ message: 'Failed to fetch scores.' });
+        // Use Mongoose to find, sort by score descending (-1), and limit to 10
+        const highScores = await Score.find()
+            .sort({ score: -1 }) 
+            .limit(10);        
+            
+        res.json(highScores);
+    } catch (error) {
+        console.error('Error fetching scores:', error);
+        res.status(500).json([]); // Return empty list on failure
     }
 });
 
-// Start the server
-app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+// Basic check route (optional)
+app.get('/', (req, res) => {
+    res.send('Server is running and ready for MongoDB!');
 });
